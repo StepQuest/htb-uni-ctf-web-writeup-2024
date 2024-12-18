@@ -1,96 +1,103 @@
-![](assets/banner.png)
+Challenge Name: Armaxis
 
-Challenge Name: <font size='10'>Armaxis</font>
-
-Challenge Description: <font color=orange>In the depths of the Frontier, Armaxis powers the enemy’s dominance, dispatching weapons to crush rebellion. Fortified and hidden, it controls vital supply chains. Yet, a flaw whispers of opportunity, a crack to expose its secrets and disrupt their plans. Can you breach Armaxis and turn its power against tyranny?</font>
+Challenge Description: In the depths of the Frontier, Armaxis powers the enemy’s dominance, dispatching weapons to crush rebellion. Fortified and hidden, it controls vital supply chains. Yet, a flaw whispers of opportunity, a crack to expose its secrets and disrupt their plans. Can you breach Armaxis and turn its power against tyranny?
 
 Category: Web
 
-Difficulty: <font color=orange>very easy</font>
+Difficulty: Very easy
 
-# Synopsis
+# Preface
 
-To solve this challenge, you will need to perform Authentication Bypass and Local File Inclusion vulnerabilities.
-
-## Description
-
-* In the depths of the Frontier, Armaxis powers the enemy’s dominance, dispatching weapons to crush rebellion. Fortified and hidden, it controls vital supply chains. Yet, a flaw whispers of opportunity, a crack to expose its secrets and disrupt their plans. Can you breach Armaxis and turn its power against tyranny?
+To solve this challenge, you will need to perform Authentication Bypass and Local File Inclusion vulnerabilities. The challenge page provided the option to download files for analysis, which you can obtain via the link: https://github.com/StepQuest/htb-uni-ctf-web-writeup-2024/blob/main/web_armaxis.zip
 
 ## Skills Required
 
-* Familiarity with malware delivery techniques
+* Basic understanding of JavaScript
+* HTTP requests interception
+* Vulnerability research skills
 
 ## Skills Learned
 
-* Analyzing malicous Java-Script code
-* Analyzing malicious VBS code
-* Analyzing malicious PowerShell code
-* Extracting hidden payloads
+* Analyzing JavaScript code
+* Login Authentication Bypass
+* Markdown Local File Inclusion
 
-# Application Overview
+# Challenge Overview
 
-Players are given the following file:
+The challenge begins with us being provided two addresses: one hosting a web application called Armaxis with a login form, and another simulating a mailbox.
 
-* **vaccine.js**: Malicious JS attachment.
-
-Opening this file, we immediately notice that is heavily obfuscated. The code contains 2 functions that are never used, and a few lines that are actually executed as it can be seen below.
+Here, we see that account registration, login, and password recovery are available.
 
 ![](assets/armaxis.png)
 
-Allthough it seems hard to read, the only obfuscation technique used, is replacing variable and function names with large random strings. To be able to read it, we need to replace the variables with simple names.
+Here, we see a mailbox belonging to the address `test@email.htb`, which currently has no messages. There's also a button that deletes all messages from the mailbox.
 
 ![](assets/mailinbox.png)
 
-Now we can easily read the code. To sum up, the attacker downloads a what it seems to be a `VBS` file, saves it on the temp folder and executes it. The malicious `VBS` file is downloaded from this URL `http://infected.human.htb/d/BKtQR`. Accessing this link, we can continue to the second step. 
+# Curiosities in Code
 
-Since the second step is even more heavily obfuscated, in the screenshot below, can be seen only a small part of the script.
+At an earlier stage, by analyzing the relatively simple JavaScript code, we can identify the existence of the `admin@armaxis.htb` email, which is mentioned in the `/web_armaxis/challenge/views/database.js` file.
 
-![](assets/vb.png)
+![](assets/admin_mail.png)
 
-Again, we notice very large and random variable names, random variable names being declared and not being used later on the code. Renaming and removing the unused variables will help us understand the script better.
-![](assets/deobf_vbs.png)
+# Walkthrough
 
-Things we have to note so far:
-* Replace obfuscation techniques have been used.
-* A powershell command is being created.
-* The powershell command is executed at the end.
+Perform a password reset for `test@email.htb`
 
-We can either continue using a static analysis approach or we can contiue our analysis dynamically. The easier way is the dynamic one and we will use it for this writeup.
+![](assets/reset_password.png)
 
-Saving the code into a file called `malicious.vbs` we can debug it by using `cscript.exe` as follows:
+As a result, we will receive a random token in the mailbox, which will need to be used to reset the password.
 
-```cmd
-cscript.exe //X malicious.exe
-```
+![](assets/password_token.png)
 
-And by placing a breakpoint at the last line we can see the content of the variable that is being passed as an argument to the `Run` function.
+On the password recovery page, enter the token and a new password. Then, open Burp Suite, click the button to confirm the password change, and intercept the request.
 
-![](assets/debug.png)
+In the intercepted packet, replace `test@mail.htb` with `admin@armaxis.htb`  and forward the package. As a result, we will have successfully changed the password for the admin account.
 
-The powershell script can be seen below:
+![](assets/chane_testmail_to_admimail.png)
 
-![](assets/powershell.png)
+After logging into the admin account, we are redirected to the `http://site.com/weapons` page, which appears empty. However, we can see that the Dispatch Weapon page is available.
 
-To deobfuscate it, and learn what the attacker is trying to execute we need to:
-* Replace `em9tYmllc` with `A`.
-* Base64-decode it.
+![](assets/admin_panel.png)
 
-We can use cyberchef for this:
+On the Dispatch Weapon page, we see a form with multiple fields. After filling in all the fields with test values, let's check the result.
 
-![](assets/cyberchef.png)
+![](assets/filled_test_form.png)
 
-The final PowerShell script can be seen here:
+We receive a table displaying the previously entered values.
 
-![](assets/final_powershell.png)
+![](assets/test_table_row.png)
 
-* It downloads an image from this URL: `http://infected.zombie.htb/WJveX71agmOQ6Gw_1698762642.jpg`
-* It carves out an embedded base64 string starting from the offset `<<BASE64_START>>` until `<<BASE64_END>>`.
-* Base64 decodes it.
-* Executes it using reflection.
+By analyzing `/web_armaxis/challenge/views/markdown.js`, we can see that it allows us to insert images. This could potentially be a vulnerability. 
+
+![](assets/markdown_url.png)
+
+Let's perform a test to disclose the `/etc/passwd` file. First, we need to find the request in Burp Suite's history where we submitted the form with test values.
+
+![](assets/test_request_preedit.png)
+
+Replace the value of the `note` field with `![url](file:///etc/passwd)` and send the request. In the response, we can see that our "weapon" has been successfully dispatched.
+
+![](assets/url_etc_passwd.png)
+
+On the weapons table page, let's download our image.
+
+![](assets/img_etc_passwd.png)
+
+Finally, we open the downloaded image file. As a result, we see the successful exploitation of an LFI vulnerability, displaying the contents of the `/etc/passwd` file. Knowing this, we can easily retrieve our flag.
+
+You can take an alternative approach by using the browser's developer tools. Copy the base64-encoded value of the image and decode it to retrieve the data. Overall, it doesn't matter which method you choose to go with.
+
+![](assets/etc_passwd.png)
+
 
 # Solution
 
-We can download the image from the previously found link and carve out the base64 string using just an editor.
+Repeat the step with modifying the `note` field value, but this time use `![url](file:///flag.txt)`.
 
-By decoding it we can see the flag.
+![](assets/url_flag.png)
+
+
+After downloading the new image from the table and opening the file, we will obtain our flag.
+
 ![](assets/flag.png)
