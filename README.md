@@ -1,4 +1,4 @@
-# HackTheBox University CTF 2024 / Web / Armaxis / Write Up
+# HTB University CTF 2024 / Web / Armaxis / Write Up
 
 Please proceed to read the Write-Up using this [link](https://github.com/StepQuest/htb-uni-ctf-web-writeup-2024/blob/main/Web-Armaxis-Writeup.md) 🤖
 
