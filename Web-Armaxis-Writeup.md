@@ -1,3 +1,5 @@
+# HackTheBox University CTF 2024 / Web / Armaxis / Write Up
+
 Challenge Name: Armaxis
 
 Challenge Description: In the depths of the Frontier, Armaxis powers the enemy’s dominance, dispatching weapons to crush rebellion. Fortified and hidden, it controls vital supply chains. Yet, a flaw whispers of opportunity, a crack to expose its secrets and disrupt their plans. Can you breach Armaxis and turn its power against tyranny?
@@ -8,7 +10,11 @@ Difficulty: Very easy
 
 # Preface
 
-To solve this challenge, you will need to perform Authentication Bypass and Local File Inclusion vulnerabilities. The challenge page provided the option to download files for analysis, which you can obtain via the link: https://github.com/StepQuest/htb-uni-ctf-web-writeup-2024/blob/main/web_armaxis.zip
+To solve this challenge, you will need to perform Authentication Bypass and Local File Inclusion vulnerabilities.
+
+The challenge page provided the option to download files for analysis, which you can obtain via the link:
+
+https://github.com/StepQuest/htb-uni-ctf-web-writeup-2024/blob/main/web_armaxis.zip
 
 ## Skills Required
 
